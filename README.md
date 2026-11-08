@@ -1,18 +1,15 @@
 # vim-lists
 
 The lists roumail's Vim plugins show in a window at the bottom, all opened,
-filtered, redrawn and closed the same way:
-[gh-extras](https://github.com/roumail/gh-extras)' `:PRs`, `:MergedPRs`,
-`:Thread` and `:Threads`, [fugitive-extras](https://github.com/roumail/fugitive-extras)'
-`:Compares` and [vim-prompts](https://github.com/roumail/vim-prompts)'
-`:AiCommentsList`. It has no commands of its own; install it for them.
+filtered, redrawn and closed the same way. Plugins open them; a plugin
+that needs it says so.
 
 ## In every list
 
 The first line is the list's heading: its title, then its keys. One window
 holds the list, so `q` and `:q` close only it; opening a list that is already
-open goes to its window. The window is as tall as the list, up to
-`g:roumail_lists_height` lines (default 15).
+open goes to its window. The window is as tall as the list, up to 15
+lines.
 
 | Key | What it does |
 | --- | --- |
@@ -23,7 +20,7 @@ open goes to its window. The window is as tall as the list, up to
 
 Each list adds its own keys, in its heading before these. `dd` is the key
 quickfix windows remove an entry with too (with
-[qf-tools](https://github.com/roumail/qf-tools)), so it is the same in every
+[qf-tools](https://github.com/vimoured/qf-tools)), so it is the same in every
 list at the bottom.
 
 ### Filtering with `/`
@@ -36,7 +33,7 @@ necessarily together. What it matches on is the list's to say. While you type:
 | Key | What it does |
 | --- | --- |
 | `<CR>` | Stop typing and keep the filter. The list stays narrowed and its keys work on it. |
-| `<Esc>` or `<C-c>` | Stop typing and drop what you changed: back to the filter you had before pressing `/` (none, the first time). |
+| `<Esc>` | Stop typing and drop what you changed: back to the filter you had before pressing `/` (none, the first time). |
 | `<BS>` | Delete the last character. |
 | `<C-w>` | Delete the last word. |
 | `<C-u>` | Delete the whole filter, so everything shows again. You are still typing: `<CR>` leaves the list unfiltered. |
@@ -78,11 +75,11 @@ the list's buffer.
 ## Install
 
 ```vim
-Plug 'roumail/vim-lists'
+Plug 'vimoured/vim-lists'
 ```
 
-## Development
+## Tests
 
-```sh
-vim -Nu NONE -i NONE -Es -S test/run.vim   # TEST=<pattern> runs some
-```
+Tested by [vim-suite](https://github.com/vimoured/vim-suite), in
+`test/vim-lists.vim`, and through the plugins whose lists it shows. Every
+pull request runs them.

@@ -116,7 +116,7 @@ function! s:draw() abort
   silent %delete _
   call setline(1, l:lines)
   setlocal nomodifiable nomodified
-  execute 'resize' min([line('$'), get(g:, 'roumail_lists_height', 15)])
+  execute 'resize' min([line('$'), 15])
 endfunction
 
 " The items matching the filter, best first, as fzf: space-separated words
@@ -177,11 +177,7 @@ function! roumail_lists#filter() abort
     call s:first()
     redraw
     echo '/' . l:list.filter
-    try
-      let l:key = getchar()
-    catch /^Vim:Interrupt$/
-      let l:key = "\<Esc>"
-    endtry
+    let l:key = getchar()
     let l:key = type(l:key) == v:t_number ? nr2char(l:key) : l:key
     if l:key ==# "\<CR>"
       break
