@@ -21,10 +21,11 @@ its own keys to these:
 
 | Key | What it does |
 | --- | --- |
-| `r` | Refresh. |
+| `r` | Refresh, and bring back everything `dd` hid. |
 | `q` | Close. |
 | `/` | Filter fuzzily as you type. `<CR>` keeps the filter, `<Esc>` drops what you changed. Only in lists that support filtering. |
-| `dd` | Remove the item. Only in lists that support removing. |
+| `dd` | Hide the item until `r`. In lists that support removing, remove it instead. |
+| `u` | Bring back the item `dd` hid last. Not in lists where `dd` removes. |
 
 ## Use from a plugin
 
@@ -63,7 +64,7 @@ And these are optional:
 | Key | What it is | Adds |
 | --- | --- | --- |
 | `match(item)` | Returns the text to filter on. | `/` |
-| `delete(item)` | Removes the item from wherever `fetch()` finds it. The list is then fetched again. | `dd` |
+| `delete(item)` | Removes the item from wherever `fetch()` finds it. The list is then fetched again. | `dd` removes instead of hiding, and there's no `u` |
 
 From a list's keys, call these (all `roumail_lists#`):
 
@@ -71,8 +72,8 @@ From a list's keys, call these (all `roumail_lists#`):
 | --- | --- |
 | `item()` | Returns the item under the cursor, or `{}` when there's none. |
 | `row()` | Returns the row under the cursor, with anything extra you put in it, or `{}` on the title lines. |
-| `refresh()` | Fetches the items again. The filter stays. |
-| `delete()` | Removes the item under the cursor, as `dd` does. |
+| `refresh()` | Fetches the items again. The filter and the hidden items stay. |
+| `delete()` | Removes or hides the item under the cursor, as `dd` does. |
 | `set(items)` | Lists these items, without fetching. |
 | `draw()` | Draws the items again, after a change to how they show. |
 | `close()` | Closes the list. |
