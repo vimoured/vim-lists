@@ -19,8 +19,9 @@
 "               list's own keys, in the order the heading shows them; one
 "               without 'call' is only a hint (a command, say)
 "   delete(item) optional: removes the item, from wherever fetch finds it;
-"               dd, in every list that can, and the list is fetched again
-" Every list has dd (with delete), / (with match), r and q, after its own keys.
+"               dd, and the list is fetched again
+" Every list has dd, u, / (with match), r and q, after its own keys. Without
+" delete, dd hides the item until r, and u brings back the last one hidden.
 
 
 function! roumail_lists#open(name, spec, vars) abort
@@ -34,7 +35,7 @@ function! roumail_lists#open(name, spec, vars) abort
   setlocal buftype=nofile bufhidden=wipe noswapfile nowrap nobuflisted winfixheight
   call extend(b:, a:vars)
   let b:roumail_lists = {'spec': a:spec, 'items': [], 'filter': '', 'rows': [],
-        \ 'line_row': []}
+        \ 'line_row': [], 'hidden': []}
   let l:i = 0
   for l:key in a:spec.keys
     if has_key(l:key, 'call')
@@ -43,13 +44,12 @@ function! roumail_lists#open(name, spec, vars) abort
     endif
     let l:i += 1
   endfor
-  if has_key(a:spec, 'delete')
-    nnoremap <buffer><silent> dd <Cmd>call roumail_lists#delete()<CR>
-  endif
+  nnoremap <buffer><silent> dd <Cmd>call roumail_lists#delete()<CR>
+  nnoremap <buffer><silent> u <Cmd>call <SID>undo()<CR>
   if has_key(a:spec, 'match')
     nnoremap <buffer><silent> / <Cmd>call roumail_lists#filter()<CR>
   endif
-  nnoremap <buffer><silent> r <Cmd>call roumail_lists#refresh()<CR>
+  nnoremap <buffer><silent> r <Cmd>call <SID>reload()<CR>
   nnoremap <buffer><silent> q <Cmd>call roumail_lists#close()<CR>
   call roumail_lists#refresh()
   call s:first()
@@ -59,16 +59,48 @@ function! roumail_lists#key(i) abort
   call b:roumail_lists.spec.keys[a:i].call()
 endfunction
 
-" dd: the item under the cursor goes, and the list is fetched again
+" dd: the item under the cursor goes, and the list is fetched again; without
+" delete, it's hidden until r
 function! roumail_lists#delete() abort
   let l:item = roumail_lists#item()
-  if !empty(l:item)
-    call b:roumail_lists.spec.delete(l:item)
+  if empty(l:item)
+    return
+  endif
+  let l:list = b:roumail_lists
+  if has_key(l:list.spec, 'delete')
+    call l:list.spec.delete(l:item)
     call roumail_lists#refresh()
+  else
+    call add(l:list.hidden, l:list.spec.id(l:item))
+    call roumail_lists#draw()
   endif
 endfunction
 
-" Fetches the items again; the filter stays
+" u: the item dd hid last is back, under the cursor. A message, not an error,
+" when there's none: Vim's own u would fail, the list being unmodifiable
+function! s:undo() abort
+  let l:list = b:roumail_lists
+  if has_key(l:list.spec, 'delete')
+    echo 'Nothing to undo: dd removes for good here'
+  elseif empty(l:list.hidden)
+    echo 'Nothing to undo'
+  else
+    let l:id = remove(l:list.hidden, -1)
+    call s:draw()
+    let l:at = s:line_of(l:id)
+    if l:at > 0
+      call cursor(l:at, 1)
+    endif
+  endif
+endfunction
+
+" r: fetches again, and what dd hid is back
+function! s:reload() abort
+  let b:roumail_lists.hidden = []
+  call roumail_lists#refresh()
+endfunction
+
+" Fetches the items again; the filter, and what dd hid, stay
 function! roumail_lists#refresh() abort
   let l:items = b:roumail_lists.spec.fetch()
   if l:items isnot v:null
@@ -98,12 +130,16 @@ function! s:draw() abort
   let l:items = s:matching()
   let l:heading = l:spec.heading(l:list.items)
   let l:hints = map(copy(l:spec.keys), {_, k -> k.key . (has_key(k, 'hint') ? ' ' . k.hint : '')})
-        \ + (has_key(l:spec, 'delete') ? ['dd remove'] : [])
+        \ + (has_key(l:spec, 'delete') ? ['dd remove'] : ['dd hide', 'u undo'])
         \ + (has_key(l:spec, 'match') ? ['/ filter'] : []) + ['r refresh', 'q close']
-  let l:heading[0] .= (empty(l:list.filter) ? ''
-        \   : ', ' . len(l:items) . ' matching ' . string(l:list.filter))
+  let l:list.rows = s:shown(l:spec.rows(l:items))
+  " Counted among all the items, as the title counts them
+  let l:hidden = empty(l:list.hidden) ? 0 : s:items(l:spec.rows(l:list.items))
+        \ - s:items(s:shown(l:spec.rows(l:list.items)))
+  let l:heading[0] .= (l:hidden ? ', ' . l:hidden . ' hidden' : '')
+        \ . (empty(l:list.filter) ? ''
+        \   : ', ' . s:items(l:list.rows) . ' matching ' . string(l:list.filter))
         \ . '  ' . join(l:hints, '  ')
-  let l:list.rows = l:spec.rows(l:items)
   let l:list.line_row = repeat([-1], len(l:heading))
   let l:lines = copy(l:heading)
   let l:i = 0
@@ -117,6 +153,19 @@ function! s:draw() abort
   call setline(1, l:lines)
   setlocal nomodifiable nomodified
   execute 'resize' min([line('$'), 15])
+endfunction
+
+" How many of rows have an item
+function! s:items(rows) abort
+  return len(filter(copy(a:rows), {_, row -> has_key(row, 'item')}))
+endfunction
+
+" rows without those dd hid. id() is of a row's item, which needn't be what
+" fetch() returned
+function! s:shown(rows) abort
+  let l:list = b:roumail_lists
+  return empty(l:list.hidden) ? a:rows : filter(a:rows, {_, row -> !has_key(row, 'item')
+        \ || index(l:list.hidden, l:list.spec.id(row.item)) < 0})
 endfunction
 
 " The items matching the filter, best first, as fzf: space-separated words
