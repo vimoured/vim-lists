@@ -78,6 +78,27 @@ From a list's keys, call these (all `roumail_lists#`):
 | `draw()` | Draws the items again, after a change to how they show. |
 | `close()` | Closes the list. |
 
+## A list of saves
+
+A plugin that lets you browse what it saved, where
+[vim-place](https://github.com/vimoured/vim-place#the-save-contract) keeps it,
+shows the saves in a list made with `roumail_lists#open()`. Not every plugin
+needs one. Its command is named for the things, `:Drafts`, as its other
+commands are; under it, the list is the same:
+
+| Part | What it is |
+| --- | --- |
+| Title | What the saves are, and how many: `Drafts (3)`. |
+| Rows | A save each, newest first by the time it was last written. A row starts with the save's name, without its extension, then when it was saved (`2026-11-13 14:25`), then what the plugin adds: counts, the files it's on. |
+| No saves | One row saying there's nothing saved here, and how to save something. |
+| `<CR>` | Open the save under the cursor, as the plugin's load does, in the window the list was opened from. |
+| `dd` | Delete the save, once you've said yes: `delete` in the spec, so there's no `u`. |
+| `/` | Filter on the name and what the row shows. |
+| `r` | List the saves again. |
+
+It takes no argument, and needs vim-place, which knows the plugin's directory.
+A plugin's README lists where its list deviates, and why.
+
 ## Tests
 
 The specs in [vim-suite](https://github.com/vimoured/vim-suite) define what it
